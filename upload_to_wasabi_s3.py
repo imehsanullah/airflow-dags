@@ -28,11 +28,12 @@ def pg_dump_backup():
         '-d', 'airflow',
         '-f', dump_file
     ]
-    # env = {'PGPASSWORD': 'Metapolaris123A'}
-    # subprocess.run(cmd, check=True, env={**env, **dict(**env)})
-    env = os.environ.copy()
-    env['PGPASSWORD'] = 'Metapolaris123A'
-    subprocess.run(cmd, check=True, env=env)
+    # env = {'PGPASSWORD': 'userpassword'}
+    env = {'PGPASSWORD': 'Metapolaris123A'}
+    subprocess.run(cmd, check=True, env={**env, **dict(**env)})
+    # env = os.environ.copy()
+    # env['PGPASSWORD'] = 'Metapolaris123A'
+    # subprocess.run(cmd, check=True, env=env)
     print(f"Backup saved to {dump_file}")
 
 # Upload function
@@ -97,8 +98,8 @@ default_args = {
 with DAG(
     dag_id="upload_to_wasabi_s3",
     start_date=days_ago(1),          # any past date works
-    schedule="@daily",               # runs every day at midnight UTC
-    catchup=False,
+    schedule_interval='@daily'
+
 ) as dag:
 
     backup = PythonOperator(
