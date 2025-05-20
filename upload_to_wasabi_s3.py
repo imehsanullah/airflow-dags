@@ -4,6 +4,7 @@ from datetime import datetime
 import boto3
 import os
 import subprocess
+from airflow.utils.dates import days_ago
 
 # Wasabi S3-compatible settings
 WASABI_ENDPOINT = 'https://eu-central-2.wasabisys.com'
@@ -69,24 +70,45 @@ default_args = {
     'retries': 1
 }
 
-dag = DAG(
-    'upload_to_wasabi_s3',
-    default_args=default_args,
-    schedule_interval=None,
+# dag = DAG(
+#     'upload_to_wasabi_s3',
+#     default_args=default_args,
+#     schedule_interval=None,
+#     catchup=False,
+#     start_date=datetime(2023, 1, 1),
+# )
+
+# upload_task = PythonOperator(
+#     task_id='upload_file_to_wasabi',
+#     python_callable=upload_to_wasabi,
+#     dag=dag
+# )
+
+# backup = PythonOperator(
+#         task_id='backup_postgres',
+#         python_callable=pg_dump_backup,
+#     )
+
+
+# backup >> upload_task
+# -------------------------------------------------------------------
+# DAG definition
+# -------------------------------------------------------------------
+with DAG(
+    dag_id="upload_to_wasabi_s3",
+    start_date=days_ago(1),          # any past date works
+    schedule="@daily",               # runs every day at midnight UTC
     catchup=False,
-    start_date=datetime(2023, 1, 1),
-)
+) as dag:
 
-upload_task = PythonOperator(
-    task_id='upload_file_to_wasabi',
-    python_callable=upload_to_wasabi,
-    dag=dag
-)
-
-backup = PythonOperator(
-        task_id='backup_postgres',
+    backup = PythonOperator(
+        task_id="backup_postgres",
         python_callable=pg_dump_backup,
     )
 
+    upload = PythonOperator(
+        task_id="upload_backup_to_wasabi",
+        python_callable=upload_to_wasabi,
+    )
 
-backup >> upload_task
+    backup >> upload
