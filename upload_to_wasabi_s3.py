@@ -64,12 +64,19 @@ def upload_to_wasabi():
     s3.upload_file(file_path, bucket_name, object_key)
     print(f"Uploaded {file_path} to s3://{bucket_name}/{object_key}")
 
-# Airflow DAG definition
-default_args = {
-    'owner': 'airflow',
-    'start_date': datetime(2023, 1, 1),
-    'retries': 1
-}
+def backup_and_upload():
+    pg_dump_backup()
+    upload_to_wasabi()
+
+
+
+
+# # Airflow DAG definition
+# default_args = {
+#     'owner': 'airflow',
+#     'start_date': datetime(2023, 1, 1),
+#     'retries': 1
+# }
 
 # dag = DAG(
 #     'upload_to_wasabi_s3',
@@ -102,14 +109,18 @@ with DAG(
 
 ) as dag:
 
-    backup = PythonOperator(
-        task_id="backup_postgres",
-        python_callable=pg_dump_backup,
+    backup_and_upload = PythonOperator(
+        task_id="backup_and_upload",
+        python_callable=backup_and_upload,
     )
+    # backup = PythonOperator(
+    #     task_id="backup_postgres",
+    #     python_callable=pg_dump_backup,
+    # )
 
-    upload = PythonOperator(
-        task_id="upload_backup_to_wasabi",
-        python_callable=upload_to_wasabi,
-    )
+    # upload = PythonOperator(
+    #     task_id="upload_backup_to_wasabi",
+    #     python_callable=upload_to_wasabi,
+    # )
 
-    backup >> upload
+    # backup >> upload
